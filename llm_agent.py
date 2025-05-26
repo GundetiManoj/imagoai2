@@ -1,6 +1,7 @@
 import openai
 import os
-
+import dotenv
+dotenv.load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def answer_question_with_context(query, context):
@@ -26,4 +27,4 @@ Answer in detail with reasoning, and perform any calculations if needed.
         temperature=0.3
     )
 
-    return response.choices[0].message["content"]
+    return response.choices[0].message.content.strip()
