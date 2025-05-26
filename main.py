@@ -13,11 +13,11 @@ def prepare_embeddings(sheet_dfs):
         save_outputs(sentences, embeddings, out_dir)
 
 def main():
-    file_path = "sample_data/example.xlsx"
+    file_path = "sample_data/Titanic.xlsx"
     parsed = parse_excel_file(file_path)
     sheet_dfs = {name: info["dataframe"] for name, info in parsed.items()}
 
-    print("\n📦 Preparing sheet embeddings...")
+    print("\n Preparing sheet embeddings...")
     prepare_embeddings(sheet_dfs)
 
     # Load rag retrievers
@@ -34,7 +34,7 @@ def main():
         if query.lower() == "exit":
             break
         response = agent.run(query)
-        print("\n🤖 Response:\n", response)
+        print("\n Response:\n", response)
 
 if __name__ == "__main__":
     main()
