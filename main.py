@@ -1,45 +1,40 @@
 from excel_loader import parse_excel_file
 from embeddings_generator import tabular_to_sentences, get_tabular_embeddings, save_outputs
-from query_engine import ask_question
-from tools.summary_tool import summarize_sheet
-from tools.python_tool import execute_python_code
+from agent.excel_agent import create_excel_agent
+from agent.rag_retriever import load_sheet_rag
+import os
+
+def prepare_embeddings(sheet_dfs):
+    model_name = "all-MiniLM-L6-v2"
+    for sheet_name, df in sheet_dfs.items():
+        out_dir = os.path.join("outputs", sheet_name)
+        sentences = tabular_to_sentences(df)
+        embeddings = get_tabular_embeddings(sentences, model_name)
+        save_outputs(sentences, embeddings, out_dir)
 
 def main():
     file_path = "sample_data/example.xlsx"
-    sheet_data = parse_excel_file(file_path)
-    sheet_name, df = list(sheet_data.items())[0]
-    df = df["dataframe"]
+    parsed = parse_excel_file(file_path)
+    sheet_dfs = {name: info["dataframe"] for name, info in parsed.items()}
 
-    # Embedding generation
-    print(f"\n📊 Processing sheet: {sheet_name}")
-    sentences = tabular_to_sentences(df)
-    embeddings = get_tabular_embeddings(sentences)
-    save_outputs(sentences, embeddings)
+    print("\n📦 Preparing sheet embeddings...")
+    prepare_embeddings(sheet_dfs)
 
-    # Show summary at startup
-    summary = summarize_sheet(df, sheet_name)
-    print("\n🔎 Sheet Summary:\n" + summary)
+    # Load rag retrievers
+    rag_retrievers = {
+        name: load_sheet_rag(name)
+        for name in sheet_dfs.keys()
+    }
+
+    # Build the agent
+    agent = create_excel_agent(sheet_dfs, list(sheet_dfs.keys()), rag_retrievers)
 
     while True:
-        query = input("\nAsk a question about the Excel file (or type 'exit'): ").strip()
+        query = input("\nAsk a question (type 'exit' to quit): ").strip()
         if query.lower() == "exit":
             break
-
-        # Tool: If explicitly asking for summary
-        if "summary" in query.lower():
-            print("\n📝 Sheet Summary:\n", summary)
-            continue
-
-        # Tool: If asking to compute Python expression
-        if query.lower().startswith("compute:"):
-            code = query.replace("compute:", "").strip()
-            result = execute_python_code(code)
-            print("\n🧮 Computation Result:", result)
-            continue
-
-        # Default: Ask via LLM RAG
-        answer = ask_question(query)
-        print("\n🧠 Answer:\n", answer)
+        response = agent.run(query)
+        print("\n🤖 Response:\n", response)
 
 if __name__ == "__main__":
     main()

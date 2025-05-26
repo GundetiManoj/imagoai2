@@ -16,7 +16,7 @@ def create_faiss_index(embeddings):
     index.add(embeddings)
     return index
 
-def retrieve_top_k(query, model, index, sentences, k=5):
+def retrieve_top_k(query, model, index, sentences, k=20):
     query_embedding = model.encode([query])[0]
     _, top_k_indices = index.search(np.array([query_embedding]), k)
     top_k_contexts = [sentences[i] for i in top_k_indices[0]]
